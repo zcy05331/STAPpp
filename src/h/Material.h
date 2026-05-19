@@ -52,3 +52,20 @@ public:
 //!	Write material data to Stream
 	virtual void Write(COutputter& output);
 };
+
+
+//! Material class for Q4 plane stress/strain element
+class CQ4Material : public CMaterial
+{
+public:
+    double nu;              //!< Poisson's ratio
+    double thickness;       //!< Element thickness
+    unsigned int analysisType; //!< 0: plane stress, 1: plane strain
+
+public:
+    //! Read material data from stream Input
+    virtual bool Read(ifstream& Input);
+
+    //! Write material data to Stream
+    virtual void Write(COutputter& output);
+};

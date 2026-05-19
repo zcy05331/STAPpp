@@ -31,3 +31,46 @@ void CBarMaterial::Write(COutputter& output)
 {
 	output << setw(16) << E << setw(16) << Area << endl;
 }
+
+
+// Read material data for Q4 plane stress/strain element
+bool CQ4Material::Read(ifstream& Input)
+{
+    Input >> nset;
+    Input >> E >> nu >> thickness >> analysisType;
+
+    if (E <= 0.0)
+    {
+        cerr << "*** Error *** Q4 material Young's modulus must be positive." << endl;
+        exit(5);
+    }
+
+    if (thickness <= 0.0)
+    {
+        cerr << "*** Error *** Q4 material thickness must be positive." << endl;
+        exit(5);
+    }
+
+    if (nu <= -1.0 || nu >= 0.5)
+    {
+        cerr << "*** Error *** Q4 material Poisson's ratio must satisfy -1 < nu < 0.5." << endl;
+        exit(5);
+    }
+
+    if (analysisType != 0 && analysisType != 1)
+    {
+        cerr << "*** Error *** Q4 analysis type must be 0 (plane stress) or 1 (plane strain)." << endl;
+        exit(5);
+    }
+
+    return true;
+}
+
+// Write material data for Q4 plane stress/strain element
+void CQ4Material::Write(COutputter& output)
+{
+    output << setw(16) << E
+           << setw(16) << nu
+           << setw(16) << thickness
+           << setw(10) << analysisType << endl;
+}

@@ -148,8 +148,8 @@ void COutputter::OutputElementInfo()
 		*this << " ELEMENT TYPE  . . . . . . . . . . . . .( NPAR(1) ) . . =" << setw(5)
 			  << ElementType << endl;
 		*this << "     EQ.1, TRUSS ELEMENTS" << endl
-			  << "     EQ.2, ELEMENTS CURRENTLY" << endl
-			  << "     EQ.3, NOT AVAILABLE" << endl
+			  << "     EQ.2, Q4 PLANE STRESS/STRAIN ELEMENTS" << endl
+			  << "     EQ.3+, NOT AVAILABLE" << endl
 			  << endl;
 
 		*this << " NUMBER OF ELEMENTS. . . . . . . . . . .( NPAR(2) ) . . =" << setw(5) << NUME
@@ -160,6 +160,9 @@ void COutputter::OutputElementInfo()
 		{
 			case ElementTypes::Bar: // Bar element
 				OutputBarElements(EleGrp);
+				break;
+			case ElementTypes::Q4: // Q4 element
+				OutputQ4Elements(EleGrp);
 				break;
 		    default:
 		        *this << ElementType << " has not been implemented yet." << endl;
@@ -209,6 +212,50 @@ void COutputter::OutputBarElements(unsigned int EleGrp)
         *this << setw(5) << Ele+1;
 		ElementGroup[Ele].Write(*this);
     }
+
+	*this << endl;
+}
+
+
+// Output Q4 element data
+void COutputter::OutputQ4Elements(unsigned int EleGrp)
+{
+	CDomain* FEMData = CDomain::GetInstance();
+
+	CElementGroup& ElementGroup = FEMData->GetEleGrpList()[EleGrp];
+	unsigned int NUMMAT = ElementGroup.GetNUMMAT();
+
+	*this << " M A T E R I A L   D E F I N I T I O N" << endl
+		  << endl;
+	*this << " NUMBER OF DIFFERENT SETS OF MATERIAL" << endl;
+	*this << " AND PLANE Q4 CONSTANTS . . . . . . . .( NPAR(3) ) . . =" << setw(5) << NUMMAT
+		  << endl
+		  << endl;
+
+	*this << "  SET       YOUNG'S        POISSON      THICKNESS   ANALYSIS" << endl
+		  << " NUMBER     MODULUS         RATIO                    TYPE" << endl
+		  << "               E             NU            T       0=PS 1=PE" << endl;
+
+	*this << setiosflags(ios::scientific) << setprecision(5);
+
+	for (unsigned int mset = 0; mset < NUMMAT; mset++)
+	{
+		*this << setw(5) << mset + 1;
+		ElementGroup.GetMaterial(mset).Write(*this);
+	}
+
+	*this << endl << endl
+		  << " E L E M E N T   I N F O R M A T I O N" << endl;
+
+	*this << " ELEMENT     NODE     NODE     NODE     NODE       MATERIAL" << endl
+		  << " NUMBER-N      I        J        K        L       SET NUMBER" << endl;
+
+	unsigned int NUME = ElementGroup.GetNUME();
+	for (unsigned int Ele = 0; Ele < NUME; Ele++)
+	{
+		*this << setw(5) << Ele + 1;
+		ElementGroup[Ele].Write(*this);
+	}
 
 	*this << endl;
 }
@@ -279,6 +326,7 @@ void COutputter::OutputElementStress()
 		switch (ElementType)
 		{
 			case ElementTypes::Bar: // Bar element
+			{
 				*this << "  ELEMENT             FORCE            STRESS" << endl
 					<< "  NUMBER" << endl;
 
@@ -295,8 +343,33 @@ void COutputter::OutputElementStress()
 				}
 
 				*this << endl;
-
 				break;
+			}
+
+			case ElementTypes::Q4: // Q4 element
+			{
+				*this << "  ELEMENT    GP             SIGMA_X           SIGMA_Y            TAU_XY" << endl;
+
+				double stress[12];
+
+				for (unsigned int Ele = 0; Ele < NUME; Ele++)
+				{
+					CElement& Element = EleGrp[Ele];
+					Element.ElementStress(stress, Displacement);
+
+					for (unsigned int gp = 0; gp < 4; gp++)
+					{
+						*this << setw(7) << Ele + 1
+							  << setw(6) << gp + 1
+							  << setw(20) << stress[3 * gp]
+							  << setw(18) << stress[3 * gp + 1]
+							  << setw(18) << stress[3 * gp + 2] << endl;
+					}
+				}
+
+				*this << endl;
+				break;
+			}
 
 			default: // Invalid element type
 				cerr << "*** Error *** Elment type " << ElementType
