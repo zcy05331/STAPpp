@@ -9,3 +9,17 @@ STAP++ is a cross-platform FEM code, which can be build on Windows, Linux and ma
 STAP++ is developed and maintained by the Computational Dynamics Laboratory (http://www.comdyn.cn/), School of Aerospace Engineering, Tsinghua University, China. Your feedbacks are welcome.
 
 The documentation of STAP++ can be found at https://xzhang66.github.io/stappp/index.html.
+
+## Course project repository layout
+
+The submission-facing tree follows the course-project guidance:
+
+| Path | Purpose |
+| --- | --- |
+| `src/` | STAPpp C++ source and CMake project file. |
+| `make/` | Build, validation, and post-processing helper scripts. |
+| `data/` | Example folders; each Q4 validation family has its own input/output folder. |
+| `doc/` | Course-project report and hand-written implementation notes. |
+| `others/` | Reference PDFs, Doxygen output, and other supporting material. |
+
+For the Q4 project checks, build from `src/` and run `make/validate_q4_cases.py`; see `make/README.md` for exact commands.
