@@ -10,7 +10,7 @@
 - 四个 Gauss 点处的 $\sigma_x, \sigma_y, \tau_{xy}$ 应力输出；
 - Q4 输入格式、材料参数和单元组注册；
 - 单元分片试验、收敛性分析、独立解析解验证；
-- ParaView 可读的 legacy VTK 后处理输出。
+- 可视化结果（预留，待后续补充）。
 
 实现保持 STAPpp 原有框架：不重构 `Node`、`Domain` 或 `Solver`，仅通过新增单元类和扩展已有单元组/输出分派完成开发。
 
@@ -143,10 +143,9 @@ $$
 - `src/h/Outputter.h`
 - `src/cpp/Outputter.cpp`
 
-辅助验证和后处理文件：
+辅助验证文件：
 
 - `make/validate_q4_cases.py`
-- `make/q4_to_vtk.py`
 - `data/q4_patch_single/`
 - `data/q4_patch_multi/`
 - `data/q4_convergence/`
@@ -299,30 +298,9 @@ $$
 
 验证算例通过。
 
-## 8. 后处理
+## 8. 后处理与可视化（预留）
 
-`make/q4_to_vtk.py` 可将 Q4 的 `.dat/.out` 结果转换为 ParaView 可读的 legacy VTK 文件。已生成示例：
-
-```text
-data/q4_validation/q4_validation_uniaxial.vtk
-```
-
-该文件包含：
-
-- 变形后节点坐标；
-- 节点位移向量 `displacement`；
-- 单元平均 `sigma_x`；
-- 平面应力 von Mises 等效应力。
-
-可用如下命令重新生成：
-
-```bash
-python3 make/q4_to_vtk.py \
-  data/q4_validation/q4_validation_uniaxial.dat \
-  data/q4_validation/q4_validation_uniaxial.out \
-  data/q4_validation/q4_validation_uniaxial.vtk \
-  --scale 100
-```
+（本节预留空白，用于后续补充 TecPlot/ParaView 变形图、应力云图、图号、图注及结果说明。）
 
 ## 9. 构建与验证命令
 
@@ -333,14 +311,13 @@ tmpbuild=$(mktemp -d /tmp/stappp-build-XXXXXX)
 cmake -S src -B "$tmpbuild" -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 cmake --build "$tmpbuild" -- -j2
 python3 make/validate_q4_cases.py --exe "$tmpbuild/stap++"
-python3 make/q4_to_vtk.py data/q4_validation/q4_validation_uniaxial.dat data/q4_validation/q4_validation_uniaxial.out data/q4_validation/q4_validation_uniaxial.vtk --scale 100
 ```
 
 本报告中的数值结果由上述验证脚本生成。
 
 ## 10. 结论
 
-本课程设计在 STAPpp 中完成了 Q4 平面四边形单元扩展，并保持原有 Bar 单元行为不变。Q4 单元通过了单单元分片试验、多单元分片试验、网格收敛性分析和独立解析解验证。程序还提供了 ParaView VTK 后处理输出，能够显示变形和应力云图数据。
+本课程设计在 STAPpp 中完成了 Q4 平面四边形单元扩展，并保持原有 Bar 单元行为不变。Q4 单元通过了单单元分片试验、多单元分片试验、网格收敛性分析和独立解析解验证。可视化结果部分已预留，待后续补充变形图和应力云图。
 
 后续可扩展方向包括：
 
