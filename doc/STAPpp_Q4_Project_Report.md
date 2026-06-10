@@ -45,14 +45,14 @@ $$
 Jacobian 矩阵为：
 
 $$
-\mathbf{J} =
+\boldsymbol{J} =
 \begin{bmatrix}
 \partial x / \partial \xi & \partial x / \partial \eta \\
 \partial y / \partial \xi & \partial y / \partial \eta
 \end{bmatrix}.
 $$
 
-程序在每个 Gauss 点检查 $\det \mathbf{J} > 0$。若节点顺序错误或单元退化导致 $\det \mathbf{J} \le 0$，程序终止并输出错误信息。
+程序在每个 Gauss 点检查 $\det \boldsymbol{J} > 0$。若节点顺序错误或单元退化导致 $\det \boldsymbol{J} \le 0$，程序终止并输出错误信息。
 
 ### 2.2 应变-位移矩阵
 
@@ -63,22 +63,22 @@ $$
 \begin{bmatrix}
 \varepsilon_x & \varepsilon_y & \gamma_{xy}
 \end{bmatrix}^{\mathrm{T}}
-= \mathbf{B}\mathbf{d}_e.
+= \boldsymbol{B}\boldsymbol{d}_e.
 $$
 
 对四节点 Q4 单元，单元自由度排列为：
 
 $$
-\mathbf{d}_e =
+\boldsymbol{d}_e =
 \begin{bmatrix}
 u_1 & v_1 & u_2 & v_2 & u_3 & v_3 & u_4 & v_4
 \end{bmatrix}^{\mathrm{T}}.
 $$
 
-矩阵 $\mathbf{B}$ 的结构为：
+矩阵 $\boldsymbol{B}$ 的结构为：
 
 $$
-\mathbf{B}_i =
+\boldsymbol{B}_i =
 \begin{bmatrix}
 \partial N_i/\partial x & 0 \\
 0 & \partial N_i/\partial y \\
@@ -91,7 +91,7 @@ $$
 平面应力：
 
 $$
-\mathbf{D} = \frac{E}{1-\nu^2}
+\boldsymbol{D} = \frac{E}{1-\nu^2}
 \begin{bmatrix}
 1 & \nu & 0 \\
 \nu & 1 & 0 \\
@@ -102,7 +102,7 @@ $$
 平面应变：
 
 $$
-\mathbf{D} = \frac{E}{(1+\nu)(1-2\nu)}
+\boldsymbol{D} = \frac{E}{(1+\nu)(1-2\nu)}
 \begin{bmatrix}
 1-\nu & \nu & 0 \\
 \nu & 1-\nu & 0 \\
@@ -117,8 +117,8 @@ $$
 Q4 单元刚度矩阵为：
 
 $$
-\mathbf{K}_e = \int_{-1}^{1}\int_{-1}^{1}
-\mathbf{B}^{\mathrm{T}}\mathbf{D}\mathbf{B} \, t \, \det\mathbf{J} \, d\xi d\eta.
+\boldsymbol{K}_e = \int_{-1}^{1}\int_{-1}^{1}
+\boldsymbol{B}^{\mathrm{T}}\boldsymbol{D}\boldsymbol{B} \, t \, \det\boldsymbol{J} \, \mathrm{d}\xi \mathrm{d}\eta.
 $$
 
 程序采用 $2\times2$ Gauss 积分，四个积分点依次为：
@@ -235,7 +235,7 @@ else
 }
 ```
 
-在每个 Gauss 点，程序先由自然坐标导数形成 Jacobian，再通过 $\mathbf{J}^{-1}$ 将形函数导数转换到物理坐标系，并组装 $\mathbf{B}$ 矩阵：
+在每个 Gauss 点，程序先由自然坐标导数形成 Jacobian，再通过 $\boldsymbol{J}^{-1}$ 将形函数导数转换到物理坐标系，并组装 $\boldsymbol{B}$ 矩阵：
 
 ```cpp
 detJ = J[0][0] * J[1][1] - J[0][1] * J[1][0];
@@ -400,7 +400,7 @@ $$
 
 收敛性分析采用平面应力悬臂矩形膜问题。左边界全约束，右边界施加竖向总力 $P=-1$ 的等效节点力。采用 $32\times8$ 网格作为参考解，对较粗网格的右上角竖向位移进行比较。
 
-| nx | ny | 右上角 $u_y$ | 相对误差 | 观测阶 |
+| $n_x$ | $n_y$ | 右上角 $u_y$ | 相对误差 | 观测阶 |
 |---:|---:|---:|---:|---:|
 | 2 | 1 | $-1.0000000000\times10^{-1}$ | $1.650270\times10^{-1}$ | - |
 | 4 | 2 | $-1.8661600000\times10^{-1}$ | $7.841100\times10^{-2}$ | 1.0736 |
@@ -441,7 +441,7 @@ $$
 该算例不作为解析精度验收项，而用于展示 Q4 单元对应力集中现象的后处理表现。程序计算得到 Gauss 点最大 von Mises 应力为：
 
 $$
-\sigma_\mathrm{vm,max}=2.994284,
+\sigma_{\mathrm{vm},\max} = 2.994284,
 $$
 
 约为名义远场拉应力的 $2.994$ 倍，接近无限板圆孔拉伸的经典应力集中系数 3，说明该算例能够清楚放大孔边与远场之间的应力差异。
