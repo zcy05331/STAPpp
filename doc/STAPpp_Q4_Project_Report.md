@@ -1,8 +1,10 @@
-# STAPpp Q4 平面四边形单元课程设计报告
+\begin{center}
+{\LARGE\bfseries STAPpp Q4 平面四边形单元大作业报告}
+\end{center}
 
 ## 1. 引言
 
-本课程设计在 STAPpp 教学有限元程序中新增四节点双线性等参四边形单元 Q4，用于二维平面应力和平面应变线弹性静力分析。新增功能包括：
+本大作业在 STAPpp 教学有限元程序中新增四节点双线性等参四边形单元 Q4，用于二维平面应力和平面应变线弹性静力分析。新增功能包括：
 
 - Q4 单元刚度矩阵计算；
 - 平面应力/平面应变本构矩阵；
@@ -50,7 +52,7 @@ $$
 \end{bmatrix}.
 $$
 
-程序在每个 Gauss 点检查 $\det \mathbf{J} > 0$。若节点顺序错误或单元退化导致 $\det \mathbf{J} \le 0$，程序立即报错终止。
+程序在每个 Gauss 点检查 $\det \mathbf{J} > 0$。若节点顺序错误或单元退化导致 $\det \mathbf{J} \le 0$，程序终止并输出错误信息。
 
 ### 2.2 应变-位移矩阵
 
@@ -130,7 +132,7 @@ $$
 
 ## 3. 程序实现方案
 
-### 3.1 新增和修改文件
+### 3.1 涉及的主要文件
 
 核心实现文件：
 
@@ -148,6 +150,7 @@ $$
 - `make/validate_q4_cases.py`
 - `data/q4_patch_single/`
 - `data/q4_patch_multi/`
+- `data/q4_patch_skew/`
 - `data/q4_convergence/`
 - `data/q4_validation/`
 - `data/q4_invalid/`
@@ -157,7 +160,7 @@ $$
 STAPpp 当前节点自由度数为 `CNode::NDF = 3`，即每个节点有 $x,y,z$ 三个平动自由度。Q4 平面单元只使用 $x,y$ 两个自由度。为避免未使用的 $z$ 自由度进入总方程形成零刚度行列，本实现采用以下约束：
 
 1. Q4 输入文件中所有 Q4 节点必须设置 `bz=1`；
-2. `CQ4::Read()` 检查所有关联节点的 `bcode[2]`，若存在活动 $z$ 自由度则报错；
+2. `CQ4::Read()` 检查所有关联节点的 `bcode[2]`，若存在活动 $z$ 自由度则输出错误信息；
 3. `CQ4::GenerateLocationMatrix()` 覆盖基类默认实现，仅生成 8 个平面自由度。
 
 Q4 单元定位矩阵顺序为：
@@ -183,6 +186,97 @@ GP4: sigma_x sigma_y tau_xy
 
 ```text
 ELEMENT GP SIGMA_X SIGMA_Y TAU_XY
+```
+
+### 3.4 C++ 关键代码摘录
+
+以下摘录保留 Q4 单元实现中最关键的计算逻辑，完整源码见 `src/h/Q4.h`、`src/cpp/Q4.cpp` 和 `src/cpp/Material.cpp`。
+
+首先，Q4 单元在读取时检查关联节点的 $z$ 自由度必须被约束；定位矩阵只取每个节点的 $x,y$ 两个平面自由度：
+
+```cpp
+for (unsigned int i = 0; i < NEN_; i++)
+{
+    if (nodes_[i]->bcode[2] != 0)
+    {
+        cerr << "*** Error *** Q4 element requires the z DOF "
+             << "of every connected node to be constrained." << endl;
+        return false;
+    }
+}
+
+void CQ4::GenerateLocationMatrix()
+{
+    unsigned int i = 0;
+    for (unsigned int N = 0; N < NEN_; N++)
+    {
+        LocationMatrix_[i++] = nodes_[N]->bcode[0];
+        LocationMatrix_[i++] = nodes_[N]->bcode[1];
+    }
+}
+```
+
+本构矩阵根据 `analysisType` 区分平面应力和平面应变：
+
+```cpp
+if (material->analysisType == 0)
+{
+    double c = E / (1.0 - nu * nu);
+    D[0][0] = c;          D[0][1] = c * nu;
+    D[1][0] = c * nu;     D[1][1] = c;
+    D[2][2] = c * (1.0 - nu) / 2.0;
+}
+else
+{
+    double c = E / ((1.0 + nu) * (1.0 - 2.0 * nu));
+    D[0][0] = c * (1.0 - nu);  D[0][1] = c * nu;
+    D[1][0] = c * nu;          D[1][1] = c * (1.0 - nu);
+    D[2][2] = c * (1.0 - 2.0 * nu) / 2.0;
+}
+```
+
+在每个 Gauss 点，程序先由自然坐标导数形成 Jacobian，再通过 $\mathbf{J}^{-1}$ 将形函数导数转换到物理坐标系，并组装 $\mathbf{B}$ 矩阵：
+
+```cpp
+detJ = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+if (detJ <= 0.0)
+    exit(6);
+
+double invJ[2][2];
+invJ[0][0] =  J[1][1] / detJ;
+invJ[0][1] = -J[0][1] / detJ;
+invJ[1][0] = -J[1][0] / detJ;
+invJ[1][1] =  J[0][0] / detJ;
+
+double dN_dx = invJ[0][0] * dN_dxi[i] + invJ[1][0] * dN_deta[i];
+double dN_dy = invJ[0][1] * dN_dxi[i] + invJ[1][1] * dN_deta[i];
+
+B[0][col]     = dN_dx;
+B[1][col + 1] = dN_dy;
+B[2][col]     = dN_dy;
+B[2][col + 1] = dN_dx;
+```
+
+单元刚度矩阵采用 $2\times2$ Gauss 积分，并按 STAPpp 原有 skyline 组装接口需要的上三角列优先格式写回：
+
+```cpp
+for (unsigned int gp = 0; gp < 4; gp++)
+{
+    StrainDisplacementMatrix(gps[gp][0], gps[gp][1], B, detJ);
+    for (unsigned int i = 0; i < ND_; i++)
+        for (unsigned int j = 0; j < ND_; j++)
+        {
+            double v = 0.0;
+            for (unsigned int a = 0; a < 3; a++)
+                for (unsigned int b = 0; b < 3; b++)
+                    v += B[a][i] * D[a][b] * B[b][j];
+            K[i][j] += v * detJ * material->thickness;
+        }
+}
+
+for (unsigned int j = 0; j < ND_; j++)
+    for (unsigned int i = 0; i <= j; i++)
+        Matrix[(j + 1) * j / 2 + j - i] = K[i][j];
 ```
 
 ## 4. 输入数据格式
@@ -255,10 +349,25 @@ $$
 
 | 项目 | 最大误差 |
 |---|---:|
-| Gauss 点应力误差 | $3.728310\times10^{-16}$ |
-| 节点位移误差 | $7.278450\times10^{-20}$ |
+| Gauss 点应力误差 | $4.968430\times10^{-16}$ |
+| 节点位移误差 | $6.421110\times10^{-19}$ |
 
 误差远小于验收阈值 $10^{-6}$，多单元分片试验通过。
+
+### 5.3 斜四边形分片试验
+
+算例目录：`data/q4_patch_skew/`
+
+为检验等参映射和 Jacobian 链式法则，增加单个梯形 Q4 单元，四个节点坐标为 $(0,0)$、$(2,0)$、$(2.5,1)$、$(0,1)$。左边界约束 $u=0$，左下角约束 $v=0$，右边界施加与 $\sigma_x=1$ 对应的等效节点力。
+
+验证结果：
+
+| 项目 | 最大误差 |
+|---|---:|
+| Gauss 点应力误差 | $2.566510\times10^{-16}$ |
+| 节点位移误差 | $7.630390\times10^{-19}$ |
+
+该算例通过，说明 Q4 单元在非矩形四边形映射下仍可精确再现线性位移场和常应力场。
 
 ## 6. 收敛性分析
 
@@ -273,7 +382,7 @@ $$
 | 8 | 2 | $-2.3717000000\times10^{-1}$ | $2.785700\times10^{-2}$ | 1.4930 |
 | 16 | 4 | $-2.5867900000\times10^{-1}$ | $6.348000\times10^{-3}$ | 2.1337 |
 
-误差随网格加密单调下降，说明 Q4 单元实现具有合理的网格收敛行为。由于本算例采用边界等效节点力和有限网格参考解，表中观测阶用于说明趋势，不将其过度解释为严格理论收敛阶。
+误差随网格加密单调下降，说明 Q4 单元实现具有合理的网格收敛行为。表中观测阶仅反映网格加密趋势；由于本算例采用边界等效节点力和有限网格参考解，该数值不代表严格的渐进理论收敛阶。
 
 ## 7. 验证算例
 
@@ -293,8 +402,8 @@ $$
 
 | 项目 | 最大误差 | 验收标准 |
 |---|---:|---:|
-| Gauss 点应力误差 | $3.682050\times10^{-16}$ | $\le 1\%$ |
-| 节点位移误差 | $1.730770\times10^{-19}$ | $\le 1\%$ |
+| Gauss 点应力误差 | $4.931060\times10^{-16}$ | $\le 1\%$ |
+| 节点位移误差 | $2.089690\times10^{-19}$ | $\le 1\%$ |
 
 验证算例通过。
 
@@ -317,7 +426,7 @@ VTK 文件中写入的主要结果量包括：
 
 **图 1** 单向拉伸验证算例的变形网格与 $\sigma_x$ 云图（位移放大 100 倍）。
 
-图 1 中，$4\times2$ Q4 网格的 $\sigma_x$ 云图在全域几乎为常值 1。色标范围只在 $1.0000$ 附近发生极小浮点波动，与解析解 $\sigma_x=1,\sigma_y=0,\tau_{xy}=0$ 及第 7 节的应力误差 $3.682050\times10^{-16}$ 一致。
+图 1 中，$4\times2$ Q4 网格的 $\sigma_x$ 云图在全域几乎为常值 1。色标范围只在 $1.0000$ 附近发生极小浮点波动，与解析解 $\sigma_x=1,\sigma_y=0,\tau_{xy}=0$ 及第 7 节的应力误差 $4.931060\times10^{-16}$ 一致。
 
 ![](figures/q4_cantilever_displacement.png){width=92%}
 
@@ -333,7 +442,7 @@ VTK 文件中写入的主要结果量包括：
 
 ## 9. 构建与验证命令
 
-由于仓库中已有 `build/` 缓存较旧，本项目采用临时目录进行新构建：
+构建命令如下（以临时构建目录为例）：
 
 ```bash
 tmpbuild=$(mktemp -d /tmp/stappp-build-XXXXXX)
@@ -357,12 +466,12 @@ python3 make/q4_to_vtk.py \
   data/q4_convergence/q4_cantilever_32x8.vtk \
   --scale 3
 
-/Applications/ParaView-6.1.1.app/Contents/bin/pvpython make/render_q4_paraview.py
+pvpython make/render_q4_paraview.py
 ```
 
 ## 10. 结论
 
-本课程设计在 STAPpp 中完成了 Q4 平面四边形单元扩展，并保持原有 Bar 单元行为不变。Q4 单元通过了单单元分片试验、多单元分片试验、网格收敛性分析和独立解析解验证。ParaView 后处理结果给出了验证算例的均匀 $\sigma_x$ 云图、悬臂梁位移模量云图和 von Mises 应力云图，图形趋势与解析验证和结构力学规律一致。
+本大作业在 STAPpp 中完成了 Q4 平面四边形单元扩展，并保持原有 Bar 单元行为不变。Q4 单元通过了单单元分片试验、多单元分片试验、斜四边形分片试验、网格收敛性分析和独立解析解验证。ParaView 后处理结果给出了验证算例的均匀 $\sigma_x$ 云图、悬臂梁位移模量云图和 von Mises 应力云图，图形趋势与解析验证和结构力学规律一致。
 
 后续可扩展方向包括：
 
@@ -373,6 +482,7 @@ python3 make/q4_to_vtk.py \
 
 ## 参考文献
 
-1. STAPpp 原始程序与课程说明文档。
-2. 张雄、王天舒、刘岩，《计算动力学（第2版）》，清华大学出版社。
-3. 有限元法基础课程讲义与 `Course Project - 2026.pdf`。
+1. 张雄，STAPpp 有限元程序及说明文档，清华大学有限元法基础课程资料。
+2. 张雄、王天舒、刘岩，《计算动力学（第2版）》，清华大学出版社，2015。
+3. 张雄，有限元法基础课程大作业说明，清华大学，2026。
+4. 张雄，《有限元法基础》，清华大学课程教材。
