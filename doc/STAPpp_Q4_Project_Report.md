@@ -10,7 +10,7 @@
 - 四个 Gauss 点处的 $\sigma_x, \sigma_y, \tau_{xy}$ 应力输出；
 - Q4 输入格式、材料参数和单元组注册；
 - 单元分片试验、收敛性分析、独立解析解验证；
-- 可视化结果（预留，待后续补充）。
+- 可视化结果：ParaView 变形图、位移模量云图和应力云图。
 
 实现保持 STAPpp 原有框架：不重构 `Node`、`Domain` 或 `Solver`，仅通过新增单元类和扩展已有单元组/输出分派完成开发。
 
@@ -298,9 +298,38 @@ $$
 
 验证算例通过。
 
-## 8. 后处理与可视化（预留）
+## 8. 后处理与可视化
 
-（本节预留空白，用于后续补充 TecPlot/ParaView 变形图、应力云图、图号、图注及结果说明。）
+本项目采用 ParaView 完成后处理可视化。后处理流程为：先由 STAPpp 生成 `.out` 文件，再用 `make/q4_to_vtk.py` 将输入网格、节点位移和单元应力转换为 legacy VTK 非结构网格文件，最后用 `make/render_q4_paraview.py` 调用 ParaView 的 `pvpython` 批量输出报告图片。
+
+VTK 文件中写入的主要结果量包括：
+
+- 节点位移向量 `displacement`；
+- 节点位移模量 `displacement_magnitude`；
+- 单元平均正应力 `sigma_x`；
+- 平面应力 von Mises 等效应力 `von_mises_plane_stress`。
+
+可视化时将坐标写为放大后的变形坐标。放大系数仅用于图形显示，不改变第 5-7 节中的数值验证结果。单向拉伸验证算例位移较小，采用 100 倍放大；悬臂梁 32×8 网格采用 3 倍放大。
+
+\newpage
+
+![](figures/q4_validation_sigma_x.png){width=92%}
+
+**图 1** 单向拉伸验证算例的变形网格与 $\sigma_x$ 云图（位移放大 100 倍）。
+
+图 1 中，$4\times2$ Q4 网格的 $\sigma_x$ 云图在全域几乎为常值 1。色标范围只在 $1.0000$ 附近发生极小浮点波动，与解析解 $\sigma_x=1,\sigma_y=0,\tau_{xy}=0$ 及第 7 节的应力误差 $3.682050\times10^{-16}$ 一致。
+
+![](figures/q4_cantilever_displacement.png){width=92%}
+
+**图 2** 悬臂梁 32×8 网格的变形图与位移模量云图（位移放大 3 倍）。
+
+图 2 显示位移模量沿梁长方向由固定端向自由端逐渐增大，最大位移出现在右端附近，符合左端固支、右端受竖向等效节点力的悬臂梁变形特征。
+
+![](figures/q4_cantilever_von_mises.png){width=92%}
+
+**图 3** 悬臂梁 32×8 网格的变形图与平面应力 von Mises 云图（位移放大 3 倍）。
+
+图 3 显示 von Mises 等效应力在固定端上、下边缘较大，并沿自由端方向降低。这与悬臂梁弯曲中固定端弯矩最大、上下边缘正应力较大的力学规律一致，说明 Q4 单元输出的应力分布具备合理的后处理表现。
 
 ## 9. 构建与验证命令
 
@@ -313,11 +342,27 @@ cmake --build "$tmpbuild" -- -j2
 python3 make/validate_q4_cases.py --exe "$tmpbuild/stap++"
 ```
 
-本报告中的数值结果由上述验证脚本生成。
+本报告中的数值结果由上述验证脚本生成。后处理图片由以下命令生成：
+
+```bash
+python3 make/q4_to_vtk.py \
+  data/q4_validation/q4_validation_uniaxial.dat \
+  data/q4_validation/q4_validation_uniaxial.out \
+  data/q4_validation/q4_validation_uniaxial.vtk \
+  --scale 100
+
+python3 make/q4_to_vtk.py \
+  data/q4_convergence/q4_cantilever_32x8.dat \
+  data/q4_convergence/q4_cantilever_32x8.out \
+  data/q4_convergence/q4_cantilever_32x8.vtk \
+  --scale 3
+
+/Applications/ParaView-6.1.1.app/Contents/bin/pvpython make/render_q4_paraview.py
+```
 
 ## 10. 结论
 
-本课程设计在 STAPpp 中完成了 Q4 平面四边形单元扩展，并保持原有 Bar 单元行为不变。Q4 单元通过了单单元分片试验、多单元分片试验、网格收敛性分析和独立解析解验证。可视化结果部分已预留，待后续补充变形图和应力云图。
+本课程设计在 STAPpp 中完成了 Q4 平面四边形单元扩展，并保持原有 Bar 单元行为不变。Q4 单元通过了单单元分片试验、多单元分片试验、网格收敛性分析和独立解析解验证。ParaView 后处理结果给出了验证算例的均匀 $\sigma_x$ 云图、悬臂梁位移模量云图和 von Mises 应力云图，图形趋势与解析验证和结构力学规律一致。
 
 后续可扩展方向包括：
 
