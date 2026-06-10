@@ -2,8 +2,8 @@
 
 The validation case reuses a 4x2 uniaxial membrane with an exact independent continuum solution. Expected stress is sigma_x=1, sigma_y=0, tau_xy=0 and displacement field is u=x/E, v=-nu*y/E.
 
-Max stress error: 3.682050e-16.
-Max displacement error: 1.730770e-19.
+Max stress error: 4.931060e-16.
+Max displacement error: 2.089690e-19.
 
 ## ParaView post-processing
 

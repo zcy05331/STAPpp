@@ -1,5 +1,5 @@
 TITLE : Q4 cantilever convergence 4x2
-        (17:39:50 on June 10, 2026, Wednesday)
+        (18:22:1 on June 10, 2026, Wednesday)
 
 C O N T R O L   I N F O R M A T I O N
 
@@ -116,10 +116,10 @@ C O N T R O L   I N F O R M A T I O N
     4              -3.15817e-02      -1.18909e-01       0.00000e+00
     5              -3.37185e-02      -1.86616e-01       0.00000e+00
     6               0.00000e+00       0.00000e+00       0.00000e+00
-    7               2.47732e-17      -1.65804e-02       0.00000e+00
-    8               5.43576e-17      -5.92154e-02       0.00000e+00
-    9               8.54050e-17      -1.18649e-01       0.00000e+00
-   10               9.04650e-17      -1.86542e-01       0.00000e+00
+    7               2.53304e-17      -1.65804e-02       0.00000e+00
+    8               4.47873e-17      -5.92154e-02       0.00000e+00
+    9               5.90798e-17      -1.18649e-01       0.00000e+00
+   10               7.01998e-17      -1.86542e-01       0.00000e+00
    11               0.00000e+00       0.00000e+00       0.00000e+00
    12               1.46035e-02      -1.76265e-02       0.00000e+00
    13               2.52451e-02      -5.96888e-02       0.00000e+00
@@ -165,9 +165,9 @@ C O N T R O L   I N F O R M A T I O N
 
  S O L U T I O N   T I M E   L O G   I N   S E C 
 
-     TIME FOR INPUT PHASE = 5.44000e-04
-     TIME FOR CALCULATION OF STIFFNESS MATRIX = 6.70000e-05
-     TIME FOR FACTORIZATION AND LOAD CASE SOLUTIONS = 1.87000e-04
+     TIME FOR INPUT PHASE = 4.99000e-04
+     TIME FOR CALCULATION OF STIFFNESS MATRIX = 6.00000e-05
+     TIME FOR FACTORIZATION AND LOAD CASE SOLUTIONS = 1.75000e-04
 
-     T O T A L   S O L U T I O N   T I M E = 7.98000e-04
+     T O T A L   S O L U T I O N   T I M E = 7.34000e-04
 

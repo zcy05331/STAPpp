@@ -41,15 +41,12 @@ protected:
 public:
 
 //!	Constructor
-	CElement() : NEN_(0), nodes_(nullptr), ElementMaterial_(nullptr) {}
+	CElement() : NEN_(0), nodes_(nullptr), ElementMaterial_(nullptr), LocationMatrix_(nullptr) {}
 
 //! Virtual deconstructor
     virtual ~CElement() {
         if (nodes_)
             delete [] nodes_;
-        
-        if (ElementMaterial_)
-            delete [] ElementMaterial_;
         
         if (LocationMatrix_)
             delete [] LocationMatrix_;

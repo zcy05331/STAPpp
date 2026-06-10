@@ -145,8 +145,8 @@ void CQ4::StrainDisplacementMatrix(double xi, double eta, double B[3][8], double
 
     for (unsigned int i = 0; i < NEN_; i++)
     {
-        double dN_dx = invJ[0][0] * dN_dxi[i] + invJ[0][1] * dN_deta[i];
-        double dN_dy = invJ[1][0] * dN_dxi[i] + invJ[1][1] * dN_deta[i];
+        double dN_dx = invJ[0][0] * dN_dxi[i] + invJ[1][0] * dN_deta[i];
+        double dN_dy = invJ[0][1] * dN_dxi[i] + invJ[1][1] * dN_deta[i];
 
         unsigned int col = 2 * i;
         B[0][col]     = dN_dx;

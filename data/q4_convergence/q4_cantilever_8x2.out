@@ -1,5 +1,5 @@
 TITLE : Q4 cantilever convergence 8x2
-        (17:39:50 on June 10, 2026, Wednesday)
+        (18:22:1 on June 10, 2026, Wednesday)
 
 C O N T R O L   I N F O R M A T I O N
 
@@ -152,14 +152,14 @@ C O N T R O L   I N F O R M A T I O N
     8              -4.21528e-02      -1.93477e-01       0.00000e+00
     9              -4.28326e-02      -2.37170e-01       0.00000e+00
    10               0.00000e+00       0.00000e+00       0.00000e+00
-   11               1.63956e-17      -5.48318e-03       0.00000e+00
-   12               3.51672e-17      -2.12307e-02       0.00000e+00
-   13               5.31097e-17      -4.48812e-02       0.00000e+00
-   14               7.74699e-17      -7.52766e-02       0.00000e+00
-   15               9.78817e-17      -1.11040e-01       0.00000e+00
-   16               1.13611e-16      -1.50833e-01       0.00000e+00
-   17               1.44792e-16      -1.93320e-01       0.00000e+00
-   18               1.40583e-16      -2.37112e-01       0.00000e+00
+   11              -7.17518e-18      -5.48318e-03       0.00000e+00
+   12              -1.71597e-17      -2.12307e-02       0.00000e+00
+   13              -2.34977e-17      -4.48812e-02       0.00000e+00
+   14              -2.99996e-17      -7.52766e-02       0.00000e+00
+   15              -2.86027e-17      -1.11040e-01       0.00000e+00
+   16              -1.88264e-17      -1.50833e-01       0.00000e+00
+   17              -2.57669e-17      -1.93320e-01       0.00000e+00
+   18              -3.65361e-17      -2.37112e-01       0.00000e+00
    19               0.00000e+00       0.00000e+00       0.00000e+00
    20               9.88627e-03      -6.90308e-03       0.00000e+00
    21               1.86519e-02      -2.21937e-02       0.00000e+00
@@ -241,9 +241,9 @@ C O N T R O L   I N F O R M A T I O N
 
  S O L U T I O N   T I M E   L O G   I N   S E C 
 
-     TIME FOR INPUT PHASE = 8.14000e-04
-     TIME FOR CALCULATION OF STIFFNESS MATRIX = 8.20000e-05
-     TIME FOR FACTORIZATION AND LOAD CASE SOLUTIONS = 3.64000e-04
+     TIME FOR INPUT PHASE = 6.61000e-04
+     TIME FOR CALCULATION OF STIFFNESS MATRIX = 1.83000e-04
+     TIME FOR FACTORIZATION AND LOAD CASE SOLUTIONS = 7.27000e-04
 
-     T O T A L   S O L U T I O N   T I M E = 1.26000e-03
+     T O T A L   S O L U T I O N   T I M E = 1.57100e-03
 

@@ -164,6 +164,45 @@ def check_patch(exe: Path, case_dir: Path, name: str, nx: int, ny: int, stress_t
     return {"max_stress_error": max_stress_err, "max_displacement_error": max_disp_err}
 
 
+def check_skew_patch(exe: Path) -> Dict[str, float]:
+    case_dir = ROOT / "data/q4_patch_skew"
+    nodes: List[Node] = [
+        (1, 1, 1, 1, 0.0, 0.0, 0.0),
+        (2, 0, 0, 1, 2.0, 0.0, 0.0),
+        (3, 0, 0, 1, 2.5, 1.0, 0.0),
+        (4, 1, 0, 1, 0.0, 1.0, 0.0),
+    ]
+    elements: List[Element] = [(1, 1, 2, 3, 4, 1)]
+    loads: List[Load] = [
+        (2, 1, 0.5 * SIGMA_X * THICKNESS),
+        (3, 1, 0.5 * SIGMA_X * THICKNESS),
+    ]
+    dat = write_case(case_dir, "q4_patch_skew", "Q4 skew quadrilateral constant stress patch", nodes, loads, elements)
+    out = run_case(exe, dat)
+
+    stresses = parse_q4_stresses(out)
+    if len(stresses) != 4:
+        raise AssertionError(f"q4_patch_skew: expected 4 stress rows, got {len(stresses)}")
+
+    max_stress_err = 0.0
+    for _, _, sx, sy, txy in stresses:
+        max_stress_err = max(max_stress_err, rel_abs_error(sx, SIGMA_X), abs(sy), abs(txy))
+    if max_stress_err > 1e-8:
+        raise AssertionError(f"q4_patch_skew: stress error {max_stress_err:.3e} > 1e-8")
+
+    disp = parse_displacements(out)
+    max_disp_err = 0.0
+    for node, _, _, _, x, y, _ in nodes:
+        ux_expected = SIGMA_X / E * x
+        uy_expected = -NU * SIGMA_X / E * y
+        ux, uy, _ = disp[node]
+        max_disp_err = max(max_disp_err, rel_abs_error(ux, ux_expected), rel_abs_error(uy, uy_expected))
+    if max_disp_err > 1e-8:
+        raise AssertionError(f"q4_patch_skew: displacement error {max_disp_err:.3e} > 1e-8")
+
+    return {"max_stress_error": max_stress_err, "max_displacement_error": max_disp_err}
+
+
 def run_convergence(exe: Path) -> List[Tuple[int, int, float, float, float]]:
     case_dir = ROOT / "data/q4_convergence"
     L = 4.0
@@ -264,6 +303,13 @@ def write_notes(results: Dict[str, object]) -> None:
         f"Max stress error: {results['patch_multi']['max_stress_error']:.6e}.\n"
         f"Max displacement error: {results['patch_multi']['max_displacement_error']:.6e}.\n"
     )
+    (ROOT / "data/q4_patch_skew/README.md").write_text(
+        "# Q4 skew-element patch test\n\n"
+        "Single trapezoidal Q4 patch with nodes (0,0), (2,0), (2.5,1), (0,1). "
+        "Expected stress: sigma_x=1, sigma_y=0, tau_xy=0.\n"
+        f"Max stress error: {results['patch_skew']['max_stress_error']:.6e}.\n"
+        f"Max displacement error: {results['patch_skew']['max_displacement_error']:.6e}.\n"
+    )
     conv_lines = ["# Q4 cantilever convergence", "", "Reference is the 32x8 mesh tip displacement.", "", "| nx | ny | tip uy | rel error | observed order |", "|---:|---:|---:|---:|---:|"]
     for nx, ny, uy, err, order in results["convergence"]:
         order_s = "-" if math.isnan(order) else f"{order:.4f}"
@@ -324,6 +370,7 @@ def main() -> int:
     results: Dict[str, object] = {}
     results["patch_single"] = check_patch(exe, ROOT / "data/q4_patch_single", "q4_patch_single", 1, 1, 1e-8, 1e-8)
     results["patch_multi"] = check_patch(exe, ROOT / "data/q4_patch_multi", "q4_patch_multi", 2, 2, 1e-6, 1e-8)
+    results["patch_skew"] = check_skew_patch(exe)
     results["validation"] = check_patch(exe, ROOT / "data/q4_validation", "q4_validation_uniaxial", 4, 2, 1e-8, 1e-8)
     results["convergence"] = run_convergence(exe)
     run_invalid_cases(exe)
@@ -332,6 +379,7 @@ def main() -> int:
     print("PASS: Bar regression")
     print(f"PASS: q4_patch_single max_stress_error={results['patch_single']['max_stress_error']:.6e} max_displacement_error={results['patch_single']['max_displacement_error']:.6e}")
     print(f"PASS: q4_patch_multi max_stress_error={results['patch_multi']['max_stress_error']:.6e} max_displacement_error={results['patch_multi']['max_displacement_error']:.6e}")
+    print(f"PASS: q4_patch_skew max_stress_error={results['patch_skew']['max_stress_error']:.6e} max_displacement_error={results['patch_skew']['max_displacement_error']:.6e}")
     print(f"PASS: q4_validation max_stress_error={results['validation']['max_stress_error']:.6e} max_displacement_error={results['validation']['max_displacement_error']:.6e}")
     print("PASS: q4_convergence")
     for nx, ny, uy, err, order in results["convergence"]:
