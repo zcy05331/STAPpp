@@ -24,6 +24,12 @@ python3 make/q4_to_vtk.py \
   --scale 100
 
 python3 make/q4_to_vtk.py \
+  data/q4_patch_shear/q4_patch_shear.dat \
+  data/q4_patch_shear/q4_patch_shear.out \
+  data/q4_patch_shear/q4_patch_shear.vtk \
+  --scale 80
+
+python3 make/q4_to_vtk.py \
   data/q4_convergence/q4_cantilever_32x8.dat \
   data/q4_convergence/q4_cantilever_32x8.out \
   data/q4_convergence/q4_cantilever_32x8.vtk \
@@ -34,4 +40,10 @@ Render the report figures with ParaView:
 
 ```bash
 pvpython make/render_q4_paraview.py
+```
+
+On macOS, if ParaView is installed as an app bundle and `pvpython` is not on `PATH`, use the bundled executable path, for example:
+
+```bash
+/Applications/ParaView-6.1.1.app/Contents/bin/pvpython make/render_q4_paraview.py
 ```

@@ -16,6 +16,7 @@ E = 1000.0
 NU = 0.25
 THICKNESS = 1.0
 SIGMA_X = 1.0
+TAU_XY = 1.0
 
 Node = Tuple[int, int, int, int, float, float, float]
 Load = Tuple[int, int, float]
@@ -98,6 +99,17 @@ def edge_loads_y(node_id: Dict[Tuple[int, int], int], nx: int, ny: int, H: float
         loads[node_id[(nx, j)]] += f
         loads[node_id[(nx, j + 1)]] += f
     return [(node, 2, load) for node, load in sorted(loads.items())]
+
+
+def top_edge_loads_x(node_id: Dict[Tuple[int, int], int], nx: int, ny: int, L: float, total: float) -> List[Load]:
+    loads = {node_id[(i, ny)]: 0.0 for i in range(nx + 1)}
+    traction = total / L
+    for i in range(nx):
+        length = L / nx
+        f = traction * length * THICKNESS / 2.0
+        loads[node_id[(i, ny)]] += f
+        loads[node_id[(i + 1, ny)]] += f
+    return [(node, 1, load) for node, load in sorted(loads.items())]
 
 
 def run_case(exe: Path, dat: Path) -> Path:
@@ -199,6 +211,46 @@ def check_skew_patch(exe: Path) -> Dict[str, float]:
         max_disp_err = max(max_disp_err, rel_abs_error(ux, ux_expected), rel_abs_error(uy, uy_expected))
     if max_disp_err > 1e-8:
         raise AssertionError(f"q4_patch_skew: displacement error {max_disp_err:.3e} > 1e-8")
+
+    return {"max_stress_error": max_stress_err, "max_displacement_error": max_disp_err}
+
+
+def check_shear_patch(exe: Path) -> Dict[str, float]:
+    case_dir = ROOT / "data/q4_patch_shear"
+    nx = 2
+    ny = 2
+    nodes, elements, node_id = generate_rect_mesh(nx, ny, L=1.0, H=1.0, patch_bc=True)
+    shear_nodes: List[Node] = []
+    for node, _bx, _by, bz, x, y, z in nodes:
+        bx = 1 if abs(y) < 1.0e-12 else 0
+        by = 1
+        shear_nodes.append((node, bx, by, bz, x, y, z))
+
+    loads = top_edge_loads_x(node_id, nx, ny, L=1.0, total=TAU_XY)
+    dat = write_case(case_dir, "q4_patch_shear", "Q4 pure shear patch", shear_nodes, loads, elements)
+    out = run_case(exe, dat)
+
+    stresses = parse_q4_stresses(out)
+    if len(stresses) != len(elements) * 4:
+        raise AssertionError(f"q4_patch_shear: expected {len(elements) * 4} stress rows, got {len(stresses)}")
+
+    max_stress_err = 0.0
+    for _, _, sx, sy, txy in stresses:
+        max_stress_err = max(max_stress_err, abs(sx), abs(sy), rel_abs_error(txy, TAU_XY))
+    if max_stress_err > 1e-8:
+        raise AssertionError(f"q4_patch_shear: stress error {max_stress_err:.3e} > 1e-8")
+
+    shear_modulus = E / (2.0 * (1.0 + NU))
+    gamma_xy = TAU_XY / shear_modulus
+    disp = parse_displacements(out)
+    max_disp_err = 0.0
+    for node, _, _, _, _x, y, _z in shear_nodes:
+        ux_expected = gamma_xy * y
+        uy_expected = 0.0
+        ux, uy, _ = disp[node]
+        max_disp_err = max(max_disp_err, rel_abs_error(ux, ux_expected), abs(uy - uy_expected))
+    if max_disp_err > 1e-8:
+        raise AssertionError(f"q4_patch_shear: displacement error {max_disp_err:.3e} > 1e-8")
 
     return {"max_stress_error": max_stress_err, "max_displacement_error": max_disp_err}
 
@@ -310,6 +362,13 @@ def write_notes(results: Dict[str, object]) -> None:
         f"Max stress error: {results['patch_skew']['max_stress_error']:.6e}.\n"
         f"Max displacement error: {results['patch_skew']['max_displacement_error']:.6e}.\n"
     )
+    (ROOT / "data/q4_patch_shear/README.md").write_text(
+        "# Q4 pure-shear patch test\n\n"
+        "2x2 square Q4 patch with bottom x-displacements fixed, all y-displacements fixed, "
+        "and a tangential traction on the top edge. Expected stress: sigma_x=0, sigma_y=0, tau_xy=1.\n"
+        f"Max stress error: {results['patch_shear']['max_stress_error']:.6e}.\n"
+        f"Max displacement error: {results['patch_shear']['max_displacement_error']:.6e}.\n"
+    )
     conv_lines = ["# Q4 cantilever convergence", "", "Reference is the 32x8 mesh tip displacement.", "", "| nx | ny | tip uy | rel error | observed order |", "|---:|---:|---:|---:|---:|"]
     for nx, ny, uy, err, order in results["convergence"]:
         order_s = "-" if math.isnan(order) else f"{order:.4f}"
@@ -371,6 +430,7 @@ def main() -> int:
     results["patch_single"] = check_patch(exe, ROOT / "data/q4_patch_single", "q4_patch_single", 1, 1, 1e-8, 1e-8)
     results["patch_multi"] = check_patch(exe, ROOT / "data/q4_patch_multi", "q4_patch_multi", 2, 2, 1e-6, 1e-8)
     results["patch_skew"] = check_skew_patch(exe)
+    results["patch_shear"] = check_shear_patch(exe)
     results["validation"] = check_patch(exe, ROOT / "data/q4_validation", "q4_validation_uniaxial", 4, 2, 1e-8, 1e-8)
     results["convergence"] = run_convergence(exe)
     run_invalid_cases(exe)
@@ -380,6 +440,7 @@ def main() -> int:
     print(f"PASS: q4_patch_single max_stress_error={results['patch_single']['max_stress_error']:.6e} max_displacement_error={results['patch_single']['max_displacement_error']:.6e}")
     print(f"PASS: q4_patch_multi max_stress_error={results['patch_multi']['max_stress_error']:.6e} max_displacement_error={results['patch_multi']['max_displacement_error']:.6e}")
     print(f"PASS: q4_patch_skew max_stress_error={results['patch_skew']['max_stress_error']:.6e} max_displacement_error={results['patch_skew']['max_displacement_error']:.6e}")
+    print(f"PASS: q4_patch_shear max_stress_error={results['patch_shear']['max_stress_error']:.6e} max_displacement_error={results['patch_shear']['max_displacement_error']:.6e}")
     print(f"PASS: q4_validation max_stress_error={results['validation']['max_stress_error']:.6e} max_displacement_error={results['validation']['max_displacement_error']:.6e}")
     print("PASS: q4_convergence")
     for nx, ny, uy, err, order in results["convergence"]:

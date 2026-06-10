@@ -34,6 +34,13 @@ JOBS = [
         "label": "sigma_x",
     },
     {
+        "vtk": ROOT / "data/q4_patch_shear/q4_patch_shear.vtk",
+        "png": ROOT / "doc/figures/q4_patch_shear_tau_xy.png",
+        "association": "CELLS",
+        "field": "tau_xy",
+        "label": "tau_xy",
+    },
+    {
         "vtk": ROOT / "data/q4_convergence/q4_cantilever_32x8.vtk",
         "png": ROOT / "doc/figures/q4_cantilever_displacement.png",
         "association": "POINTS",

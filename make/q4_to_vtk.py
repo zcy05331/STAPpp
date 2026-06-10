@@ -89,6 +89,14 @@ def main() -> int:
         for ele, *_ in elements:
             vals = stresses.get(ele, [(0.0, 0.0, 0.0)])
             f.write(f"{sum(v[0] for v in vals)/len(vals):.12e}\n")
+        f.write("SCALARS sigma_y double 1\nLOOKUP_TABLE default\n")
+        for ele, *_ in elements:
+            vals = stresses.get(ele, [(0.0, 0.0, 0.0)])
+            f.write(f"{sum(v[1] for v in vals)/len(vals):.12e}\n")
+        f.write("SCALARS tau_xy double 1\nLOOKUP_TABLE default\n")
+        for ele, *_ in elements:
+            vals = stresses.get(ele, [(0.0, 0.0, 0.0)])
+            f.write(f"{sum(v[2] for v in vals)/len(vals):.12e}\n")
         f.write("SCALARS von_mises_plane_stress double 1\nLOOKUP_TABLE default\n")
         for ele, *_ in elements:
             vals = stresses.get(ele, [(0.0, 0.0, 0.0)])
