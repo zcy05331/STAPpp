@@ -14,7 +14,7 @@ Run all regression and Q4 course-project checks:
 python3 make/validate_q4_cases.py --exe "$tmpbuild/stap++"
 ```
 
-Regenerate the ParaView legacy VTK output:
+Regenerate the ParaView legacy VTK outputs:
 
 ```bash
 python3 make/q4_to_vtk.py \
@@ -22,4 +22,16 @@ python3 make/q4_to_vtk.py \
   data/q4_validation/q4_validation_uniaxial.out \
   data/q4_validation/q4_validation_uniaxial.vtk \
   --scale 100
+
+python3 make/q4_to_vtk.py \
+  data/q4_convergence/q4_cantilever_32x8.dat \
+  data/q4_convergence/q4_cantilever_32x8.out \
+  data/q4_convergence/q4_cantilever_32x8.vtk \
+  --scale 3
+```
+
+Render the report figures with ParaView:
+
+```bash
+pvpython make/render_q4_paraview.py
 ```

@@ -268,6 +268,19 @@ def write_notes(results: Dict[str, object]) -> None:
     for nx, ny, uy, err, order in results["convergence"]:
         order_s = "-" if math.isnan(order) else f"{order:.4f}"
         conv_lines.append(f"| {nx} | {ny} | {uy:.10e} | {err:.6e} | {order_s} |")
+    conv_lines.extend(
+        [
+            "",
+            "## ParaView post-processing",
+            "",
+            "The 32x8 reference mesh is used for the report displacement and von Mises contour figures. "
+            "Generate the deformed-coordinate VTK file with a visual scale factor of 3:",
+            "",
+            "```bash",
+            "python3 make/q4_to_vtk.py data/q4_convergence/q4_cantilever_32x8.dat data/q4_convergence/q4_cantilever_32x8.out data/q4_convergence/q4_cantilever_32x8.vtk --scale 3",
+            "```",
+        ]
+    )
     (ROOT / "data/q4_convergence/README.md").write_text("\n".join(conv_lines) + "\n")
     (ROOT / "data/q4_validation/README.md").write_text(
         "# Q4 validation example\n\n"
@@ -277,10 +290,10 @@ def write_notes(results: Dict[str, object]) -> None:
         f"Max displacement error: {results['validation']['max_displacement_error']:.6e}.\n\n"
         "## ParaView post-processing\n\n"
         "`q4_validation_uniaxial.vtk` is a legacy VTK unstructured-grid file generated from the STAPpp `.dat/.out` pair and can be opened directly in ParaView. "
-        "It contains deformed coordinates (scale 100), nodal displacement vectors, cell-average `sigma_x`, and cell-average plane-stress von Mises values.\n\n"
+        "It contains deformed coordinates (scale 100), nodal displacement vectors, nodal `displacement_magnitude`, cell-average `sigma_x`, and cell-average plane-stress von Mises values.\n\n"
         "Regenerate with:\n\n"
         "```bash\n"
-        "python3 tools/q4_to_vtk.py data/q4_validation/q4_validation_uniaxial.dat data/q4_validation/q4_validation_uniaxial.out data/q4_validation/q4_validation_uniaxial.vtk --scale 100\n"
+        "python3 make/q4_to_vtk.py data/q4_validation/q4_validation_uniaxial.dat data/q4_validation/q4_validation_uniaxial.out data/q4_validation/q4_validation_uniaxial.vtk --scale 100\n"
         "```\n"
     )
 

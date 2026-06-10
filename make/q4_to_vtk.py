@@ -80,6 +80,11 @@ def main() -> int:
         for node, *_ in nodes:
             ux, uy, uz = disps.get(node, (0.0, 0.0, 0.0))
             f.write(f"{ux:.12e} {uy:.12e} {uz:.12e}\n")
+        f.write("SCALARS displacement_magnitude double 1\nLOOKUP_TABLE default\n")
+        for node, *_ in nodes:
+            ux, uy, uz = disps.get(node, (0.0, 0.0, 0.0))
+            mag = (ux * ux + uy * uy + uz * uz) ** 0.5
+            f.write(f"{mag:.12e}\n")
         f.write(f"CELL_DATA {len(elements)}\nSCALARS sigma_x double 1\nLOOKUP_TABLE default\n")
         for ele, *_ in elements:
             vals = stresses.get(ele, [(0.0, 0.0, 0.0)])
