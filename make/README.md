@@ -30,6 +30,12 @@ python3 make/q4_to_vtk.py \
   --scale 80
 
 python3 make/q4_to_vtk.py \
+  data/q4_plate_hole/q4_plate_hole_tension.dat \
+  data/q4_plate_hole/q4_plate_hole_tension.out \
+  data/q4_plate_hole/q4_plate_hole_tension.vtk \
+  --scale 20
+
+python3 make/q4_to_vtk.py \
   data/q4_convergence/q4_cantilever_32x8.dat \
   data/q4_convergence/q4_cantilever_32x8.out \
   data/q4_convergence/q4_cantilever_32x8.vtk \

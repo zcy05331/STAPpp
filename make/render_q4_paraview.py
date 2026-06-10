@@ -41,6 +41,13 @@ JOBS = [
         "label": "tau_xy",
     },
     {
+        "vtk": ROOT / "data/q4_plate_hole/q4_plate_hole_tension.vtk",
+        "png": ROOT / "doc/figures/q4_plate_hole_von_mises.png",
+        "association": "CELLS",
+        "field": "von_mises_plane_stress",
+        "label": "von Mises",
+    },
+    {
         "vtk": ROOT / "data/q4_convergence/q4_cantilever_32x8.vtk",
         "png": ROOT / "doc/figures/q4_cantilever_displacement.png",
         "association": "POINTS",

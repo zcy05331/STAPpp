@@ -255,6 +255,79 @@ def check_shear_patch(exe: Path) -> Dict[str, float]:
     return {"max_stress_error": max_stress_err, "max_displacement_error": max_disp_err}
 
 
+def generate_quarter_plate_hole(nr: int, ntheta: int, radius: float, outer: float) -> Tuple[List[Node], List[Element], Dict[Tuple[int, int], int]]:
+    nodes: List[Node] = []
+    node_id: Dict[Tuple[int, int], int] = {}
+    n = 1
+    for j in range(ntheta + 1):
+        theta = 0.5 * math.pi * j / ntheta
+        c = math.cos(theta)
+        s = math.sin(theta)
+        r_outer = outer / max(c, s)
+        for i in range(nr + 1):
+            t = (i / nr) ** 1.35
+            r = radius + (r_outer - radius) * t
+            x = r * c
+            y = r * s
+            bx = 1 if j == ntheta else 0
+            by = 1 if j == 0 else 0
+            node_id[(i, j)] = n
+            nodes.append((n, bx, by, 1, x, y, 0.0))
+            n += 1
+
+    elements: List[Element] = []
+    e = 1
+    for j in range(ntheta):
+        for i in range(nr):
+            n1 = node_id[(i, j)]
+            n2 = node_id[(i + 1, j)]
+            n3 = node_id[(i + 1, j + 1)]
+            n4 = node_id[(i, j + 1)]
+            elements.append((e, n1, n2, n3, n4, 1))
+            e += 1
+    return nodes, elements, node_id
+
+
+def check_plate_hole_stress(exe: Path) -> Dict[str, float]:
+    case_dir = ROOT / "data/q4_plate_hole"
+    nr = 10
+    ntheta = 32
+    radius = 1.0
+    outer = 5.0
+    nodes, elements, node_id = generate_quarter_plate_hole(nr, ntheta, radius, outer)
+    coords = {node: (x, y) for node, _bx, _by, _bz, x, y, _z in nodes}
+
+    loads_by_node = {node_id[(nr, j)]: 0.0 for j in range(ntheta // 2 + 1)}
+    for j in range(ntheta // 2):
+        n1 = node_id[(nr, j)]
+        n2 = node_id[(nr, j + 1)]
+        x1, y1 = coords[n1]
+        x2, y2 = coords[n2]
+        length = math.hypot(x2 - x1, y2 - y1)
+        f = SIGMA_X * length * THICKNESS / 2.0
+        loads_by_node[n1] += f
+        loads_by_node[n2] += f
+    loads = [(node, 1, load) for node, load in sorted(loads_by_node.items())]
+
+    dat = write_case(case_dir, "q4_plate_hole_tension", "Q4 quarter plate with circular hole in tension", nodes, loads, elements)
+    out = run_case(exe, dat)
+    stresses = parse_q4_stresses(out)
+    if len(stresses) != len(elements) * 4:
+        raise AssertionError(f"q4_plate_hole_tension: expected {len(elements) * 4} stress rows, got {len(stresses)}")
+
+    max_vm = 0.0
+    min_vm = float("inf")
+    for _ele, _gp, sx, sy, txy in stresses:
+        vm = math.sqrt(sx * sx - sx * sy + sy * sy + 3.0 * txy * txy)
+        max_vm = max(max_vm, vm)
+        min_vm = min(min_vm, vm)
+    stress_ratio = max_vm / SIGMA_X
+    if stress_ratio < 2.0:
+        raise AssertionError(f"q4_plate_hole_tension: stress concentration ratio {stress_ratio:.3f} < 2.0")
+
+    return {"max_von_mises": max_vm, "min_von_mises": min_vm, "stress_ratio": stress_ratio}
+
+
 def run_convergence(exe: Path) -> List[Tuple[int, int, float, float, float]]:
     case_dir = ROOT / "data/q4_convergence"
     L = 4.0
@@ -369,6 +442,14 @@ def write_notes(results: Dict[str, object]) -> None:
         f"Max stress error: {results['patch_shear']['max_stress_error']:.6e}.\n"
         f"Max displacement error: {results['patch_shear']['max_displacement_error']:.6e}.\n"
     )
+    (ROOT / "data/q4_plate_hole/README.md").write_text(
+        "# Q4 plate-with-hole stress concentration example\n\n"
+        "Quarter model of a finite square plate with a circular hole. Symmetry constraints are applied on x=0 and y=0, "
+        "and a nominal tensile traction sigma_x=1 is applied on the far right edge.\n"
+        f"Maximum Gauss-point von Mises stress: {results['plate_hole']['max_von_mises']:.6e}.\n"
+        f"Minimum Gauss-point von Mises stress: {results['plate_hole']['min_von_mises']:.6e}.\n"
+        f"Stress concentration ratio against nominal sigma_x: {results['plate_hole']['stress_ratio']:.6e}.\n"
+    )
     conv_lines = ["# Q4 cantilever convergence", "", "Reference is the 32x8 mesh tip displacement.", "", "| nx | ny | tip uy | rel error | observed order |", "|---:|---:|---:|---:|---:|"]
     for nx, ny, uy, err, order in results["convergence"]:
         order_s = "-" if math.isnan(order) else f"{order:.4f}"
@@ -431,6 +512,7 @@ def main() -> int:
     results["patch_multi"] = check_patch(exe, ROOT / "data/q4_patch_multi", "q4_patch_multi", 2, 2, 1e-6, 1e-8)
     results["patch_skew"] = check_skew_patch(exe)
     results["patch_shear"] = check_shear_patch(exe)
+    results["plate_hole"] = check_plate_hole_stress(exe)
     results["validation"] = check_patch(exe, ROOT / "data/q4_validation", "q4_validation_uniaxial", 4, 2, 1e-8, 1e-8)
     results["convergence"] = run_convergence(exe)
     run_invalid_cases(exe)
@@ -441,6 +523,7 @@ def main() -> int:
     print(f"PASS: q4_patch_multi max_stress_error={results['patch_multi']['max_stress_error']:.6e} max_displacement_error={results['patch_multi']['max_displacement_error']:.6e}")
     print(f"PASS: q4_patch_skew max_stress_error={results['patch_skew']['max_stress_error']:.6e} max_displacement_error={results['patch_skew']['max_displacement_error']:.6e}")
     print(f"PASS: q4_patch_shear max_stress_error={results['patch_shear']['max_stress_error']:.6e} max_displacement_error={results['patch_shear']['max_displacement_error']:.6e}")
+    print(f"PASS: q4_plate_hole max_von_mises={results['plate_hole']['max_von_mises']:.6e} stress_ratio={results['plate_hole']['stress_ratio']:.6e}")
     print(f"PASS: q4_validation max_stress_error={results['validation']['max_stress_error']:.6e} max_displacement_error={results['validation']['max_displacement_error']:.6e}")
     print("PASS: q4_convergence")
     for nx, ny, uy, err, order in results["convergence"]:
